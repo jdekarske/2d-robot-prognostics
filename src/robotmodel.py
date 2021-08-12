@@ -136,7 +136,7 @@ mass_matrix = kane.mass_matrix_full
 forcing_vector = kane.forcing_full
 
 
-sys = System(kane)
+kane_sys = System(kane)
 
 # TODO
 # exponential degradation

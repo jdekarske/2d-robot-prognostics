@@ -34,7 +34,8 @@ end_effector.set_pos(elbow, fore_arm_length * fore_arm_frame.y)
 upper_arm_com_length, fore_arm_com_length = symbols('d_U, d_F')
 
 upper_arm_mass_center = Point('U_o')
-upper_arm_mass_center.set_pos(shoulder, upper_arm_com_length * upper_arm_frame.y)
+upper_arm_mass_center.set_pos(
+    shoulder, upper_arm_com_length * upper_arm_frame.y)
 
 fore_arm_mass_center = Point('F_o')
 fore_arm_mass_center.set_pos(elbow, fore_arm_com_length * fore_arm_frame.y)
@@ -93,11 +94,12 @@ fore_arm = RigidBody('Upper Leg', fore_arm_mass_center, fore_arm_frame,
 
 # gravity
 g = symbols('g')
-upper_arm_grav = (upper_arm_mass_center,-upper_arm_mass * g * inertial_frame.y)
+upper_arm_grav = (upper_arm_mass_center, -
+                  upper_arm_mass * g * inertial_frame.y)
 
-fore_arm_grav = (fore_arm_mass_center,-fore_arm_mass * g * inertial_frame.y)
+fore_arm_grav = (fore_arm_mass_center, -fore_arm_mass * g * inertial_frame.y)
 
-end_effector_grav = (end_effector,-end_effector_mass * g * inertial_frame.y)
+end_effector_grav = (end_effector, -end_effector_mass * g * inertial_frame.y)
 
 # joint torques
 
@@ -108,7 +110,7 @@ upper_arm_torque = (upper_arm_frame,
                     inertial_frame.z)
 
 fore_arm_torque = (fore_arm_frame,
-                    elbow_torque * inertial_frame.z)
+                   elbow_torque * inertial_frame.z)
 
 
 # # Equations of Motion
@@ -135,8 +137,12 @@ fr, frstar = kane.kanes_equations(bodies, loads)
 mass_matrix = kane.mass_matrix_full
 forcing_vector = kane.forcing_full
 
-
-kane_sys = System(kane)
+# Gravity compensation
+fore_arm_grav_compensation_expr = fore_arm_mass_center.pos_from(
+    elbow).dot(inertial_frame.x) * fore_arm_mass * -g
+upper_arm_grav_compensation_expr = upper_arm_mass_center.pos_from(
+    shoulder).dot(inertial_frame.x) * upper_arm_mass * -g + fore_arm_mass_center.pos_from(
+    shoulder).dot(inertial_frame.x) * fore_arm_mass * -g
 
 # TODO
 # exponential degradation
@@ -147,4 +153,3 @@ kane_sys = System(kane)
 # can it lift the mass
 # add some noise
 # do with 5kg
-

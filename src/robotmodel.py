@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 from sympy import symbols, simplify, pi
-from sympy.physics.mechanics import dynamicsymbols, ReferenceFrame, Point, inertia, RigidBody, KanesMethod
+from sympy.physics.mechanics import dynamicsymbols, ReferenceFrame, Point, inertia, RigidBody, Particle, KanesMethod
 from sympy.physics.vector import init_vprinting
 from pydy.system import System
 import numpy as np
@@ -26,9 +26,9 @@ upper_arm_length = symbols('l_U')
 elbow = Point('E')
 elbow.set_pos(shoulder, upper_arm_length * upper_arm_frame.y)
 
-end_effector = Point('EE')
+end_effector_point = Point('EE')
 fore_arm_length = symbols('l_F')
-end_effector.set_pos(elbow, fore_arm_length * fore_arm_frame.y)
+end_effector_point.set_pos(elbow, fore_arm_length * fore_arm_frame.y)
 
 # Center of Masses
 upper_arm_com_length, fore_arm_com_length = symbols('d_U, d_F')
@@ -63,7 +63,7 @@ elbow.v2pt_theory(shoulder, inertial_frame, upper_arm_frame)
 
 fore_arm_mass_center.v2pt_theory(elbow, inertial_frame, fore_arm_frame)
 
-end_effector.v2pt_theory(elbow, inertial_frame, fore_arm_frame)
+end_effector_point.v2pt_theory(elbow, inertial_frame, fore_arm_frame)
 
 
 # # Inertia
@@ -89,6 +89,9 @@ upper_arm = RigidBody('Upper Arm', upper_arm_mass_center, upper_arm_frame,
 fore_arm = RigidBody('Upper Leg', fore_arm_mass_center, fore_arm_frame,
                      fore_arm_mass, fore_arm_central_inertia)
 
+# and a particle
+
+end_effector = Particle('End Effector', end_effector_point, end_effector_mass)
 
 # # Kinetics
 
@@ -99,7 +102,7 @@ upper_arm_grav = (upper_arm_mass_center, -
 
 fore_arm_grav = (fore_arm_mass_center, -fore_arm_mass * g * inertial_frame.y)
 
-end_effector_grav = (end_effector, -end_effector_mass * g * inertial_frame.y)
+end_effector_grav = (end_effector_point, -end_effector_mass * g * inertial_frame.y)
 
 # degradation torques
 shoulder_degradation_rate, elbow_degradation_rate = symbols('R_s, R_e')
@@ -137,10 +140,11 @@ kane = KanesMethod(inertial_frame,
 loads = [
     upper_arm_grav,
     fore_arm_grav,
+    end_effector_grav,
     upper_arm_torque,
     fore_arm_torque]
 
-bodies = [upper_arm, fore_arm]
+bodies = [upper_arm, fore_arm, end_effector]
 
 fr, frstar = kane.kanes_equations(bodies, loads)
 

@@ -102,15 +102,17 @@ upper_arm_grav = (upper_arm_mass_center, -
 
 fore_arm_grav = (fore_arm_mass_center, -fore_arm_mass * g * inertial_frame.y)
 
-end_effector_grav = (end_effector_point, -end_effector_mass * g * inertial_frame.y)
+end_effector_grav = (end_effector_point, -
+                     end_effector_mass * g * inertial_frame.y)
 
 # degradation torques
-shoulder_degradation_rate, elbow_degradation_rate = symbols('R_s, R_e')
+shoulder_degradation, elbow_degradation = symbols('R_s, R_e')
 
-shoulder_degradation_torque = shoulder_degradation_rate * -omega1 # discrete-proportional
+shoulder_degradation_torque = shoulder_degradation * - \
+    omega1  # discrete-proportional
 # shoulder_degradation_torque = (1 + shoulder_degradation_rate)**sm.dynamicssymbols._t * -omega1 # continuous-exponential (untested)
 
-elbow_degradation_torque = elbow_degradation_rate * -omega2 # discrete-proportional
+elbow_degradation_torque = elbow_degradation * -omega2  # discrete-proportional
 # elbow_degradation_torque = (1 + elbow_degradation_rate)**sm.dynamicssymbols._t * -omega2 # continuous-exponential (untested)
 
 

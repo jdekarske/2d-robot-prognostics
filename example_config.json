@@ -1,0 +1,28 @@
+{
+    "desired_positions": [
+        [
+            30,
+            45
+        ],
+        [
+            45,
+            90
+        ]
+    ],
+    "elbow_degradations": [
+        0.1,
+        0.2,
+        0.3,
+        0.4
+    ],
+    "shoulder_degradations": [
+        0.1,
+        0.2,
+        0.3,
+        0.4
+    ],
+    "elbow_degradations_SD": 0.1,
+    "shoulder_degradations_SD": 0.1,
+    "chunks": 1,
+    "chunk_time": 10
+}

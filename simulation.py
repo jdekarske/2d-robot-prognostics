@@ -88,7 +88,7 @@ upper_arm_grav_compensator = sm.lambdify(
     [theta1, theta2], upper_arm_grav_compensation_expr.subs(real_sys.constants))
 
 
-def full_simulation(chunks, chunk_time, desired_positions, shoulder_degradation_rate, elbow_degradation_rate, noise_SD):
+def full_simulation(chunks, chunk_time, desired_positions, shoulder_degradation_val, elbow_degradation_val, shoulder_degradation_SD, elbow_degradation_SD):
     chunk_times = np.arange(0.0, chunk_time, SIMULATION_TIME_STEP)
 
     all_positions = np.tile(desired_positions, (1, chunks))
@@ -109,10 +109,8 @@ def full_simulation(chunks, chunk_time, desired_positions, shoulder_degradation_
 
         # update model parameters
         # Increase degradation each chunk, must be greater than 0!!!
-        real_constants[elbow_degradation] = np.max(
-            [0.0, i*(elbow_degradation_rate + np.random.normal(0, noise_SD))])
-        real_constants[shoulder_degradation] = np.max(
-            [0.0, i*(shoulder_degradation_rate + np.random.normal(0, noise_SD))])  # Increase degradation each chunk
+        real_constants[elbow_degradation] = np.max([0.0, (elbow_degradation_val + np.random.normal(0, elbow_degradation_SD))])
+        real_constants[shoulder_degradation] = np.max([0.0, (shoulder_degradation_val + np.random.normal(0, shoulder_degradation_SD))])
 
         # make a new system (because it is required when changing constants)
         real_sys = System(kane)
@@ -144,7 +142,7 @@ def full_simulation(chunks, chunk_time, desired_positions, shoulder_degradation_
     return (all_t, all_y, all_command)
 
 # Config File #
-######################
+###############
 
 
 def print_help():
@@ -177,11 +175,12 @@ for elbow_deg in config['elbow_degradations']:
     for shoulder_deg in config['shoulder_degradations']:
         t = time.time()
         all_t, all_y, all_command = full_simulation(config['chunks'], config['chunk_time'], np.deg2rad(
-            np.array(config['desired_positions'])), shoulder_deg, elbow_deg, config['elbow_degradations_SD'])
+            np.array(config['desired_positions'])), shoulder_deg, elbow_deg, config['shoulder_degradations_SD'], config['elbow_degradations_SD'])
 
-        signal_range = np.min(np.ptp(all_y[:, :2], axis=0))
-        random_addition = np.random.normal(0, signal_range/1000, all_y.shape)
-        noise_y = all_y + random_addition
+        # TODO we'll add observation noise if we need it
+        # signal_range = np.min(np.ptp(all_y[:, :2], axis=0))
+        # random_addition = np.random.normal(0, signal_range/1000, all_y.shape)
+        # noise_y = all_y + random_addition
 
         fname = "shoulder{:d}-elbow{:d}.csv".format(
             int(shoulder_deg*100), int(elbow_deg*100))

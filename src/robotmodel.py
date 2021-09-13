@@ -108,11 +108,12 @@ end_effector_grav = (end_effector_point, -
 # degradation torques
 shoulder_degradation, elbow_degradation = symbols('R_s, R_e')
 
-shoulder_degradation_torque = shoulder_degradation * - \
-    omega1  # discrete-proportional
+shoulder_degradation_torque = shoulder_degradation * -omega1  # viscous friction
+# shoulder_degradation_torque = shoulder_degradation * -np.sign(omega1)  # kinetic friction
 # shoulder_degradation_torque = (1 + shoulder_degradation_rate)**sm.dynamicssymbols._t * -omega1 # continuous-exponential (untested)
 
-elbow_degradation_torque = elbow_degradation * -omega2  # discrete-proportional
+elbow_degradation_torque = elbow_degradation * -omega2  # viscous friction
+# elbow_degradation_torque = elbow_degradation * -np.sign(omega2)  # kinetic friction
 # elbow_degradation_torque = (1 + elbow_degradation_rate)**sm.dynamicssymbols._t * -omega2 # continuous-exponential (untested)
 
 

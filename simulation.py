@@ -173,21 +173,22 @@ print("starting simulation, if there is no output in 10 seconds, ctrl+c and rest
 
 for elbow_deg in config['elbow_degradations']:
     for shoulder_deg in config['shoulder_degradations']:
-        t = time.time()
-        all_t, all_y, all_command = full_simulation(config['chunks'], config['chunk_time'], np.deg2rad(
-            np.array(config['desired_positions'])), shoulder_deg, elbow_deg, config['shoulder_degradations_SD'], config['elbow_degradations_SD'])
+        t = time.time() # for profiling
+        fname = "shoulder{:d}-elbow{:d}.csv".format(int(shoulder_deg*100), int(elbow_deg*100))
+        with open(fname,"a") as write_file:
+            for i in range(config['iterations']):
+                all_t, all_y, all_command = full_simulation(config['chunks'], config['chunk_time'], np.deg2rad(
+                    np.array(config['desired_positions'])), shoulder_deg, elbow_deg, config['shoulder_degradations_SD'], config['elbow_degradations_SD'])
 
-        # TODO we'll add observation noise if we need it
-        # signal_range = np.min(np.ptp(all_y[:, :2], axis=0))
-        # random_addition = np.random.normal(0, signal_range/1000, all_y.shape)
-        # noise_y = all_y + random_addition
+                # TODO we'll add observation noise if we need it
+                # signal_range = np.min(np.ptp(all_y[:, :2], axis=0))
+                # random_addition = np.random.normal(0, signal_range/1000, all_y.shape)
+                # noise_y = all_y + random_addition
 
-        fname = "shoulder{:d}-elbow{:d}.csv".format(
-            int(shoulder_deg*100), int(elbow_deg*100))
-        np.savetxt(fname, np.hstack((all_t, all_y, all_command)), fmt='%2.5f')
+                np.savetxt(write_file, np.hstack((all_t, all_y, all_command)), fmt='%2.5f')
 
         elapsed = time.time() - t
-        print(fname + " completed in " + str(elapsed) + " seconds.")
+        print(fname + " completed " + str(config['iterations']) + " iterations in " + str(elapsed) + " seconds.")
 
 with open("header.txt", "w") as text_file:
     text_file.write("time\ttheta1\ttheta2\tomega1\tomega2\ttorque1\ttorque2")

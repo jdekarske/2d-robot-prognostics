@@ -87,6 +87,12 @@ fore_arm_grav_compensator = sm.lambdify(
 upper_arm_grav_compensator = sm.lambdify(
     [theta1, theta2], upper_arm_grav_compensation_expr.subs(real_sys.constants))
 
+# add a semsor for end effector position
+end_effector_x = sm.lambdify(
+    [theta1, theta2], end_effector_x_expr.subs(real_sys.constants))
+end_effector_y = sm.lambdify(
+    [theta1, theta2], end_effector_y_expr.subs(real_sys.constants))
+
 
 def full_simulation(chunks, chunk_time, desired_positions, shoulder_degradation_val, elbow_degradation_val, shoulder_degradation_SD, elbow_degradation_SD):
     chunk_times = np.arange(0.0, chunk_time, SIMULATION_TIME_STEP)
@@ -99,6 +105,7 @@ def full_simulation(chunks, chunk_time, desired_positions, shoulder_degradation_
     all_t = np.empty((chunk_times.size * chunks, 1))  # times
     all_y = np.empty((chunk_times.size * chunks, 4))  # 4 states
     all_command = np.empty((chunk_times.size * chunks, 2))  # 2 inputs
+    all_pos = np.empty((chunk_times.size * chunks, 2)) # x and y
 
     for i in range(chunks):
         # desired positions input must have chunks+1 number of positions where the first is the initial position
@@ -109,8 +116,10 @@ def full_simulation(chunks, chunk_time, desired_positions, shoulder_degradation_
 
         # update model parameters
         # Increase degradation each chunk, must be greater than 0!!!
-        real_constants[elbow_degradation] = np.max([0.0, (elbow_degradation_val + np.random.normal(0, elbow_degradation_SD))])
-        real_constants[shoulder_degradation] = np.max([0.0, (shoulder_degradation_val + np.random.normal(0, shoulder_degradation_SD))])
+        real_constants[elbow_degradation] = np.max(
+            [0.0, (elbow_degradation_val + np.random.normal(0, elbow_degradation_SD))])
+        real_constants[shoulder_degradation] = np.max(
+            [0.0, (shoulder_degradation_val + np.random.normal(0, shoulder_degradation_SD))])
 
         # make a new system (because it is required when changing constants)
         real_sys = System(kane)
@@ -137,9 +146,15 @@ def full_simulation(chunks, chunk_time, desired_positions, shoulder_degradation_
             lambda a: controller(a, 0), 1, np.transpose(sol.y))
         all_command[output_indices[0]:output_indices[1], :] = commands
 
+        positions_x = np.apply_along_axis(lambda a: end_effector_x(a[0],a[1]), 0, sol.y[:2,:])
+        positions_y = np.apply_along_axis(lambda a: end_effector_y(a[0],a[1]), 0, sol.y[:2,:])
+
+        all_pos[output_indices[0]:output_indices[1], 0] = positions_x
+        all_pos[output_indices[0]:output_indices[1], 1] = positions_y
+
         chunk_initial_conditions = sol.y[:, -1]
 
-    return (all_t, all_y, all_command)
+    return (all_t, all_y, all_command, all_pos)
 
 # Config File #
 ###############
@@ -173,11 +188,12 @@ print("starting simulation, if there is no output in 10 seconds, ctrl+c and rest
 
 for elbow_deg in config['elbow_degradations']:
     for shoulder_deg in config['shoulder_degradations']:
-        t = time.time() # for profiling
-        fname = "shoulder{:d}-elbow{:d}.csv".format(int(shoulder_deg*100), int(elbow_deg*100))
-        with open(fname,"a") as write_file:
+        t = time.time()  # for profiling
+        fname = "shoulder{:d}-elbow{:d}.csv".format(
+            int(shoulder_deg*100), int(elbow_deg*100))
+        with open(fname, "a") as write_file:
             for i in range(config['iterations']):
-                all_t, all_y, all_command = full_simulation(config['chunks'], config['chunk_time'], np.deg2rad(
+                all_t, all_y, all_command, all_positions = full_simulation(config['chunks'], config['chunk_time'], np.deg2rad(
                     np.array(config['desired_positions'])), shoulder_deg, elbow_deg, config['shoulder_degradations_SD'], config['elbow_degradations_SD'])
 
                 # TODO we'll add observation noise if we need it
@@ -185,10 +201,12 @@ for elbow_deg in config['elbow_degradations']:
                 # random_addition = np.random.normal(0, signal_range/1000, all_y.shape)
                 # noise_y = all_y + random_addition
 
-                np.savetxt(write_file, np.hstack((all_t, all_y, all_command)), fmt='%2.5f')
+                np.savetxt(write_file, np.hstack(
+                    (all_t, all_y, all_command, all_positions)), fmt='%2.5f')
 
         elapsed = time.time() - t
-        print(fname + " completed " + str(config['iterations']) + " iterations in " + str(elapsed) + " seconds.")
+        print(fname + " completed " +
+              str(config['iterations']) + " iterations in " + str(elapsed) + " seconds.")
 
 with open("header.txt", "w") as text_file:
-    text_file.write("time\ttheta1\ttheta2\tomega1\tomega2\ttorque1\ttorque2")
+    text_file.write("time\ttheta1\ttheta2\tomega1\tomega2\ttorque1\ttorque2\tx\ty")

@@ -65,6 +65,8 @@ fore_arm_mass_center.v2pt_theory(elbow, inertial_frame, fore_arm_frame)
 
 end_effector_point.v2pt_theory(elbow, inertial_frame, fore_arm_frame)
 
+end_effector_x_expr = end_effector_point.pos_from(shoulder).dot(inertial_frame.x)
+end_effector_y_expr = end_effector_point.pos_from(shoulder).dot(inertial_frame.y)
 
 # # Inertia
 
@@ -162,11 +164,4 @@ upper_arm_grav_compensation_expr = upper_arm_mass_center.pos_from(
     shoulder).dot(inertial_frame.x) * fore_arm_mass * -g
 
 # TODO
-# exponential degradation
-# piecewise degradation modes
 # torque joint limits
-# 2 joints, 3 FM ea (100% 60% 30%)
-# just the torque data
-# can it lift the mass
-# add some noise
-# do with 5kg

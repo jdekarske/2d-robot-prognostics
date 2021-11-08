@@ -1,11 +1,11 @@
-label,cycle number,shoulder_degradation,elbow_degradation,payload
-LABEL1,1,0.5,0.1,2
-LABEL1,2,0.5,0.1,2
-LABEL1,3,0.5,0.1,2
-LABEL1,4,0.5,0.1,2
-LABEL1,5,0.5,0.1,2
-DLABEL2,1,0.1,0.5,2
-DLABEL2,2,0.1,0.5,2
-DLABEL2,3,0.1,0.5,2
-DLABEL2,4,0.1,0.5,2
-DLABEL2,5,0.1,0.5,2
+label,cycle number,shoulder_deg_start,shoulder_deg_end,elbow_deg_start,elbow_deg_end,shoulder_degradation,elbow_degradation,payload,cycle_time
+LABEL1,1,30,45,45,90,0.5,0.1,2,10
+LABEL1,2,30,45,45,90,0.5,0.1,2,10
+LABEL1,3,30,45,45,90,0.5,0.1,2,10
+LABEL1,4,30,45,45,90,0.5,0.1,2,10
+LABEL1,5,30,45,45,90,0.5,0.1,2,10
+LABEL2,1,30,45,45,90,0.1,0.5,2,10
+LABEL2,2,30,45,45,90,0.1,0.5,2,10
+LABEL2,3,30,45,45,90,0.1,0.5,2,10
+LABEL2,4,30,45,45,90,0.1,0.5,2,10
+LABEL2,5,30,45,45,90,0.1,0.5,2,10

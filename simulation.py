@@ -81,17 +81,20 @@ equilibrium_dict = dict(zip(coordinates + speeds, equilibrium_point))
 
 K, Nbar = build_optimal_controller(kane, model_sys.constants, equilibrium_dict)
 
-# also design a gravity compensator
-fore_arm_grav_compensator = sm.lambdify(
-    [theta1, theta2], fore_arm_grav_compensation_expr.subs(real_sys.constants))
-upper_arm_grav_compensator = sm.lambdify(
-    [theta1, theta2], upper_arm_grav_compensation_expr.subs(real_sys.constants))
-
 # add a semsor for end effector position
 end_effector_x = sm.lambdify(
     [theta1, theta2], end_effector_x_expr.subs(real_sys.constants))
 end_effector_y = sm.lambdify(
     [theta1, theta2], end_effector_y_expr.subs(real_sys.constants))
+
+
+# also design a gravity compensator
+def gravity_compensators(system_constants):
+    fore_arm_grav_compensator = sm.lambdify(
+        [theta1, theta2], fore_arm_grav_compensation_expr.subs(system_constants))
+    upper_arm_grav_compensator = sm.lambdify(
+        [theta1, theta2], upper_arm_grav_compensation_expr.subs(system_constants))
+    return (fore_arm_grav_compensator, upper_arm_grav_compensator)
 
 
 def full_simulation(chunks, chunk_time, desired_positions, shoulder_degradation_val, elbow_degradation_val, shoulder_degradation_SD, elbow_degradation_SD):
@@ -105,7 +108,7 @@ def full_simulation(chunks, chunk_time, desired_positions, shoulder_degradation_
     all_t = np.empty((chunk_times.size * chunks, 1))  # times
     all_y = np.empty((chunk_times.size * chunks, 4))  # 4 states
     all_command = np.empty((chunk_times.size * chunks, 2))  # 2 inputs
-    all_pos = np.empty((chunk_times.size * chunks, 2)) # x and y
+    all_pos = np.empty((chunk_times.size * chunks, 2))  # x and y
 
     for i in range(chunks):
         # desired positions input must have chunks+1 number of positions where the first is the initial position
@@ -120,6 +123,9 @@ def full_simulation(chunks, chunk_time, desired_positions, shoulder_degradation_
             [0.0, (elbow_degradation_val + np.random.normal(0, elbow_degradation_SD))])
         real_constants[shoulder_degradation] = np.max(
             [0.0, (shoulder_degradation_val + np.random.normal(0, shoulder_degradation_SD))])
+
+        # assume known payload mass, and generate expressions for gravity compensation
+        fore_arm_grav_compensator, upper_arm_grav_compensator = gravity_compensators(real_constants)
 
         # make a new system (because it is required when changing constants)
         real_sys = System(kane)
@@ -146,8 +152,10 @@ def full_simulation(chunks, chunk_time, desired_positions, shoulder_degradation_
             lambda a: controller(a, 0), 1, np.transpose(sol.y))
         all_command[output_indices[0]:output_indices[1], :] = commands
 
-        positions_x = np.apply_along_axis(lambda a: end_effector_x(a[0],a[1]), 0, sol.y[:2,:])
-        positions_y = np.apply_along_axis(lambda a: end_effector_y(a[0],a[1]), 0, sol.y[:2,:])
+        positions_x = np.apply_along_axis(
+            lambda a: end_effector_x(a[0], a[1]), 0, sol.y[:2, :])
+        positions_y = np.apply_along_axis(
+            lambda a: end_effector_y(a[0], a[1]), 0, sol.y[:2, :])
 
         all_pos[output_indices[0]:output_indices[1], 0] = positions_x
         all_pos[output_indices[0]:output_indices[1], 1] = positions_y
@@ -209,4 +217,5 @@ for elbow_deg in config['elbow_degradations']:
               str(config['iterations']) + " iterations in " + str(elapsed) + " seconds.")
 
 with open("header.txt", "w") as text_file:
-    text_file.write("time\ttheta1\ttheta2\tomega1\tomega2\ttorque1\ttorque2\tx\ty")
+    text_file.write(
+        "time\ttheta1\ttheta2\tomega1\tomega2\ttorque1\ttorque2\tx\ty")

@@ -1,0 +1,11 @@
+label,cycle number,shoulder_degradation,elbow_degradation,payload
+LABEL1,1,0.5,0.1,2
+LABEL1,2,0.5,0.1,2
+LABEL1,3,0.5,0.1,2
+LABEL1,4,0.5,0.1,2
+LABEL1,5,0.5,0.1,2
+DLABEL2,1,0.1,0.5,2
+DLABEL2,2,0.1,0.5,2
+DLABEL2,3,0.1,0.5,2
+DLABEL2,4,0.1,0.5,2
+DLABEL2,5,0.1,0.5,2

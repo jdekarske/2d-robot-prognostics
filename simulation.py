@@ -9,6 +9,7 @@ import copy
 import numpy as np
 from scipy.integrate import solve_ivp
 import sympy as sm
+import pandas as pd
 print("---")
 print("IGNORE THIS WARNING")
 
@@ -125,7 +126,8 @@ def full_simulation(chunks, chunk_time, desired_positions, shoulder_degradation_
             [0.0, (shoulder_degradation_val + np.random.normal(0, shoulder_degradation_SD))])
 
         # assume known payload mass, and generate expressions for gravity compensation
-        fore_arm_grav_compensator, upper_arm_grav_compensator = gravity_compensators(real_constants)
+        fore_arm_grav_compensator, upper_arm_grav_compensator = gravity_compensators(
+            real_constants)
 
         # make a new system (because it is required when changing constants)
         real_sys = System(kane)
@@ -164,12 +166,12 @@ def full_simulation(chunks, chunk_time, desired_positions, shoulder_degradation_
 
     return (all_t, all_y, all_command, all_pos)
 
+
 # Config File #
 ###############
-
-
 def print_help():
-    print("Usage: python {} config_file.json".format(sys.argv[0]))
+    print("Usage: python {} [config_file.json|config_file.csv]".format(
+        sys.argv[0]))
     return
 
 
@@ -183,38 +185,72 @@ if __name__ == "__main__":
         exit()
 
     config_file_path = sys.argv[1]
-    print("using config file: {}".format(config_file_path))
-
-
-    with open(config_file_path) as f:
-        config = json.load(f)
+    config_file_type = config_file_path.split('.')[-1]
+    if (config_file_type == 'csv' or config_file_type == 'json'):
+        print("using config file: {}".format(config_file_path))
+    else:
+        raise RuntimeError(
+            "only csv or json files are accepted. See examples in base directory.")
 
     # Run the Simulation #
     ######################
 
     print("starting simulation, if there is no output in 10 seconds, ctrl+c and restart script")
 
-    for elbow_deg in config['elbow_degradations']:
-        for shoulder_deg in config['shoulder_degradations']:
+    # Using csv
+    if (config_file_type == 'csv'):
+        config_df = pd.read_csv(config_file_path)
+        for index, config in config_df.iterrows():
             t = time.time()  # for profiling
-            fname = "shoulder{:d}-elbow{:d}.csv".format(
-                int(shoulder_deg*100), int(elbow_deg*100))
-            with open(fname, "a") as write_file:
-                for i in range(config['iterations']):
-                    all_t, all_y, all_command, all_positions = full_simulation(config['chunks'], config['chunk_time'], np.deg2rad(
-                        np.array(config['desired_positions'])), shoulder_deg, elbow_deg, config['shoulder_degradations_SD'], config['elbow_degradations_SD'])
+            fname = "{}-cycle{}-shoulder{}-elbow{}-payload{}.csv".format(
+                config["label"], config["cycle"],
+                str(config["shoulder_deg"]).replace('.', '_'), str(config["elbow_deg"]).replace('.', '_'),
+                str(config["payload"]).replace('.', '_'))
+            desired_positions = [
+                [config["shoulder_degrees_start"], config["elbow_degrees_start"]],
+                [config["shoulder_degrees_end"], config["elbow_degrees_end"]]]
+            all_t, all_y, all_command, all_positions = full_simulation(1, config['cycle_time'], np.deg2rad(
+                np.array(desired_positions)), config["shoulder_deg"], config["elbow_deg"], 0, 0)
 
-                    # TODO we'll add observation noise if we need it
-                    # signal_range = np.min(np.ptp(all_y[:, :2], axis=0))
-                    # random_addition = np.random.normal(0, signal_range/1000, all_y.shape)
-                    # noise_y = all_y + random_addition
+            # TODO we'll add observation noise if we need it
+            # signal_range = np.min(np.ptp(all_y[:, :2], axis=0))
+            # random_addition = np.random.normal(0, signal_range/1000, all_y.shape)
+            # noise_y = all_y + random_addition
 
-                    np.savetxt(write_file, np.hstack(
-                        (all_t, all_y, all_command, all_positions)), fmt='%2.5f')
+            with open(fname, "w") as write_file:
+                np.savetxt(write_file, np.hstack(
+                    (all_t, all_y, all_command, all_positions)), fmt='%2.5f')
 
             elapsed = time.time() - t
-            print(fname + " completed " +
-                str(config['iterations']) + " iterations in " + str(elapsed) + " seconds.")
+            print(fname + " completed in " + str(elapsed) + " seconds.")
+
+    # Using json
+    elif (config_file_type == 'json'):
+        with open(config_file_path) as f:
+            config = json.load(f)
+
+        # Using json
+        for elbow_deg in config['elbow_degradations']:
+            for shoulder_deg in config['shoulder_degradations']:
+                t = time.time()  # for profiling
+                fname = "shoulder{:d}-elbow{:d}.csv".format(
+                    int(shoulder_deg*100), int(elbow_deg*100))
+                with open(fname, "a") as write_file:
+                    for i in range(config['iterations']):
+                        all_t, all_y, all_command, all_positions = full_simulation(config['chunks'], config['chunk_time'], np.deg2rad(
+                            np.array(config['desired_positions'])), shoulder_deg, elbow_deg, config['shoulder_degradations_SD'], config['elbow_degradations_SD'])
+
+                        # TODO we'll add observation noise if we need it
+                        # signal_range = np.min(np.ptp(all_y[:, :2], axis=0))
+                        # random_addition = np.random.normal(0, signal_range/1000, all_y.shape)
+                        # noise_y = all_y + random_addition
+
+                        np.savetxt(write_file, np.hstack(
+                            (all_t, all_y, all_command, all_positions)), fmt='%2.5f')
+
+                elapsed = time.time() - t
+                print(fname + " completed " +
+                      str(config['iterations']) + " iterations in " + str(elapsed) + " seconds.")
 
     with open("header.txt", "w") as text_file:
         text_file.write(

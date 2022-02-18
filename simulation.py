@@ -98,7 +98,7 @@ def gravity_compensators(system_constants):
     return (fore_arm_grav_compensator, upper_arm_grav_compensator)
 
 
-def full_simulation(chunks, chunk_time, desired_positions, shoulder_degradation_val, elbow_degradation_val, shoulder_degradation_SD, elbow_degradation_SD):
+def full_simulation(chunks, chunk_time, desired_positions, shoulder_degradation_val, elbow_degradation_val, shoulder_degradation_SD, elbow_degradation_SD, payload=0):
     chunk_times = np.arange(0.0, chunk_time, SIMULATION_TIME_STEP)
 
     all_positions = np.tile(desired_positions, (1, chunks))
@@ -124,6 +124,9 @@ def full_simulation(chunks, chunk_time, desired_positions, shoulder_degradation_
             [0.0, (elbow_degradation_val + np.random.normal(0, elbow_degradation_SD))])
         real_constants[shoulder_degradation] = np.max(
             [0.0, (shoulder_degradation_val + np.random.normal(0, shoulder_degradation_SD))])
+
+        # Assume the endeffector is massless compared to the payload
+        real_constants[end_effector_mass] = np.max([0.0, payload])
 
         # assume known payload mass, and generate expressions for gravity compensation
         fore_arm_grav_compensator, upper_arm_grav_compensator = gravity_compensators(
@@ -204,13 +207,14 @@ if __name__ == "__main__":
             t = time.time()  # for profiling
             fname = "{}-cycle{}-shoulder{}-elbow{}-payload{}.csv".format(
                 config["label"], config["cycle"],
-                str(config["shoulder_deg"]).replace('.', '_'), str(config["elbow_deg"]).replace('.', '_'),
+                str(config["shoulder_deg"]).replace('.', '_'), str(
+                    config["elbow_deg"]).replace('.', '_'),
                 str(config["payload"]).replace('.', '_'))
             desired_positions = [
                 [config["shoulder_degrees_start"], config["elbow_degrees_start"]],
                 [config["shoulder_degrees_end"], config["elbow_degrees_end"]]]
             all_t, all_y, all_command, all_positions = full_simulation(1, config['cycle_time'], np.deg2rad(
-                np.array(desired_positions)), config["shoulder_deg"], config["elbow_deg"], 0, 0)
+                np.array(desired_positions)), config["shoulder_deg"], config["elbow_deg"], 0, 0, config["payload"])
 
             # TODO we'll add observation noise if we need it
             # signal_range = np.min(np.ptp(all_y[:, :2], axis=0))

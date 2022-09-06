@@ -1,0 +1,9 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+- family-names: "Dekarske"
+  given-names: "Jason"
+title: "2d-robot-prognostics"
+version: 1.0.0
+date-released: 2022-09-06
+url: "https://github.com/jdekarske/2d-robot-prognostics"

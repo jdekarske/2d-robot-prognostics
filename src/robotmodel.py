@@ -88,7 +88,7 @@ fore_arm_central_inertia = (fore_arm_inertia_dyadic, fore_arm_mass_center)
 upper_arm = RigidBody('Upper Arm', upper_arm_mass_center, upper_arm_frame,
                       upper_arm_mass, upper_arm_central_inertia)
 
-fore_arm = RigidBody('Upper Leg', fore_arm_mass_center, fore_arm_frame,
+fore_arm = RigidBody('Fore Arm', fore_arm_mass_center, fore_arm_frame,
                      fore_arm_mass, fore_arm_central_inertia)
 
 # and a particle
@@ -162,6 +162,35 @@ fore_arm_grav_compensation_expr = fore_arm_mass_center.pos_from(
 upper_arm_grav_compensation_expr = upper_arm_mass_center.pos_from(
     shoulder).dot(inertial_frame.x) * upper_arm_mass * -g + fore_arm_mass_center.pos_from(
     shoulder).dot(inertial_frame.x) * fore_arm_mass * -g
+
+def reachable(model, x, y):
+    l1 = model[upper_arm_length]
+    l2 = model[fore_arm_length]
+    r = l1 + l2 
+    if y > 0:
+        y_reachable = r**2-x**2
+        return y_reachable >= y
+    else:
+        y_reachable = x**2-r**2
+        return y_reachable <= y
+
+def inverseKinematics(model, x, y, armconfig=1):
+    if not reachable(model, x, y):
+        raise RuntimeError(f"specified coordinates ({x}, {y}) not reachable.")
+    # something is weird about numpy atan2 I think
+    tmp = x
+    x=y
+    y=tmp
+    
+    # Modern Robotics pg 221
+    l1 = model[upper_arm_length]
+    l2 = model[fore_arm_length]
+    
+    D = (np.power(x,2)+np.power(y,2)-np.power(l1,2)-np.power(l2,2))/(2*l1*l2)
+    theta2 = np.arctan2(armconfig*np.sqrt(1-np.power(D,2)), D)
+    
+    theta1 = np.arctan2(y,x) - np.arctan2(l2*np.sin(theta2), l1+l2*np.cos(theta2))
+    return [theta1, theta2]
 
 # TODO
 # torque joint limits

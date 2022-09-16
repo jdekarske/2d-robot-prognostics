@@ -210,11 +210,23 @@ if __name__ == "__main__":
                 str(config["shoulder_deg"]).replace('.', '_'), str(
                     config["elbow_deg"]).replace('.', '_'),
                 str(config["payload"]).replace('.', '_'))
-            desired_positions = [
-                [config["shoulder_degrees_start"], config["elbow_degrees_start"]],
-                [config["shoulder_degrees_end"], config["elbow_degrees_end"]]]
-            all_t, all_y, all_command, all_positions = full_simulation(1, config['cycle_time'], np.deg2rad(
-                np.array(desired_positions)), config["shoulder_deg"], config["elbow_deg"], 0, 0, config["payload"])
+
+            # use command angles or end effector pose
+            if ("shoulder_degrees_start" in config.keys()):
+                desired_positions = [
+                    [config["shoulder_degrees_start"], config["elbow_degrees_start"]],
+                    [config["shoulder_degrees_end"], config["elbow_degrees_end"]]]
+                desired_positions = np.deg2rad(np.array(desired_positions)).T
+            else: # inverse kinematics to get angles
+                start = inverseKinematics(model_constants, config['x_start'], config['y_start'])
+                end = inverseKinematics(model_constants, config['x_end'], config['y_end'])
+                desired_positions = np.array([start,end]).T
+            print(config['x_start'], config['y_start'])
+            print(config['x_end'], config['y_end'])
+            print(desired_positions)
+            
+            all_t, all_y, all_command, all_positions = full_simulation(1, config['cycle_time'], 
+                desired_positions, config["shoulder_deg"], config["elbow_deg"], 0, 0, config["payload"])
 
             # TODO we'll add observation noise if we need it
             # signal_range = np.min(np.ptp(all_y[:, :2], axis=0))

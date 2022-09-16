@@ -1,5 +1,5 @@
 label,cycle,shoulder_degrees_start,shoulder_degrees_end,elbow_degrees_start,elbow_degrees_end,shoulder_deg,elbow_deg,payload,cycle_time
-LABEL1,1,30,45,45,90,0.5,0.1,2,10
+LABEL1,1,30,45,45,90,0.5,0.1,0,10
 LABEL1,2,30,45,45,90,0.5,0.1,2,10
 LABEL1,3,30,45,45,90,0.5,0.1,2,10
 LABEL1,4,30,45,45,90,0.5,0.1,10,10
